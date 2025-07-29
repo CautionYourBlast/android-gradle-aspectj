@@ -7,7 +7,13 @@ Supports writing code with AspectJ-lang in `.aj` files and in java-annotation st
 Full support of Android product flavors and build types.
 Support Kotlin, Groovy, Scala and any other languages that compiles into java bytecode.
 
-Actual version supporting of AGP 4.1.+: `com.archinamon:android-gradle-aspectj:4.3.0`.<br />
+Actual version supporting of AGP 8.2+ and Gradle 8.x: `com.archinamon:android-gradle-aspectj:5.0.0`.<br />
+
+## Requirements
+- **Gradle:** 8.0+
+- **Android Gradle Plugin:** 8.2+  
+- **Java:** 17+
+- **AspectJ:** 1.9.4+
 <br />
 Friendly with <a href="https://zeroturnaround.com/software/jrebel-for-android/" target="_blank">jRebel for Android</a>!
 
@@ -15,7 +21,7 @@ This plugin is completely friendly with <a href="https://bitbucket.org/hvisser/a
 <a href="https://github.com/excilys/androidannotations" target="_blank">AndroidAnnotations</a>, <a href="https://github.com/square/dagger" target="_blank">Dagger</a> are also supported and works fine.
 
 This plugin has many ideas from the others similar projects, but no one of them grants full pack of features like this one.
-Nowadays it has been completely re-written using Transform API.
+Nowadays it has been completely re-written for Gradle 8.x and Android Gradle Plugin 8.x compatibility using task-based integration.
 
 Key features
 -----
@@ -23,7 +29,7 @@ Key features
 Augments Java, Kotlin, Groovy bytecode simultaneously!<br />
 Works with background mechanics of jvm-based languages out-of-box!<br />
 [How to teach Android Studio to understand the AspectJ!](IDE)<br />
-May not work properly for AS 3.0 :(
+Compatible with modern Android Studio versions.
 
 It is easy to isolate your code with aspect classes, that will be simply injected via cross-point functions, named `advices`, into your core application. The main idea is — code less, do more!
 
@@ -51,14 +57,14 @@ Add the plugin to your `buildscript`'s `dependencies` section:
 <details open><summary>Kotlin</summary>
 
 ```kotlin
-classpath("com.archinamon:android-gradle-aspectj:4.3.0")
+classpath("com.archinamon:android-gradle-aspectj:5.0.0")
 ```
 
 </details>
 <details><summary>Groovy</summary>
 
 ```groovy
-classpath 'com.archinamon:android-gradle-aspectj:4.3.0'
+classpath 'com.archinamon:android-gradle-aspectj:5.0.0'
 ```
 
 </details>
@@ -123,7 +129,7 @@ aspectj {
     compileTests = true // default value
 
     ajc = "1.9.4" // default value
-    java = JavaVersion.VERSION_1_7 // default value
+    java = JavaVersion.VERSION_17 // default value
 
     /* @see Ext plugin config **/
     includeAllJars = false // default value
@@ -161,7 +167,7 @@ aspectj {
     compileTests true // default value
 
     ajc '1.9.4' // default value
-    java = JavaVersion.VERSION_1_7 // default value
+    java = JavaVersion.VERSION_17 // default value
 
     /* @see Ext plugin config **/
     includeAllJars false // default value
@@ -361,6 +367,13 @@ So concrete rule is:
 
 Changelog
 ---------
+#### 5.0.0 -- Gradle 8.x and AGP 8.x Support
+* upgraded plugin to support Gradle 8.x and Android Gradle Plugin 8.2+;
+* replaced deprecated Transform API with task-based integration;
+* removed jcenter() repository references (deprecated);
+* updated build configuration for Java 17 compatibility;
+* maintained full AspectJ weaving functionality with improved build performance;
+
 #### 4.2.1 -- Improve jar archives
 * better api for AGP 4.0.+;
 * fix java.lang.NoClassDefFoundError: Failed resolution of: Landroidx/appcompat/R$drawable;

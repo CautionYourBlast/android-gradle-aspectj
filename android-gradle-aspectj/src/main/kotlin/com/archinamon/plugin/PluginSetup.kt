@@ -1,23 +1,26 @@
 package com.archinamon.plugin
 
-import com.android.build.api.component.impl.ComponentIdentityImpl
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+import com.android.build.api.variant.ComponentIdentity
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.android.build.gradle.AppPlugin
 import com.android.build.gradle.LibraryPlugin
-import com.android.build.gradle.internal.dependency.VariantDependencies
-import com.android.builder.core.VariantType
-import com.android.builder.core.VariantTypeImpl
+import com.android.build.gradle.internal.core.VariantSources
+import com.android.build.gradle.internal.variant.BaseVariantData
 import com.archinamon.AndroidConfig
 import com.archinamon.AspectJExtension
 import com.archinamon.MISDEFINITION
 import com.archinamon.RETROLAMBDA
 import com.archinamon.api.AspectJCompileTask
 import com.archinamon.api.BuildTimeListener
+import com.archinamon.api.transform.AspectJTaskProvider
 import com.archinamon.utils.*
-//import com.google.wireless.android.sdk.stats.GradleBuildVariant
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.PluginContainer
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.isAccessible
 
 internal fun configProject(project: Project, config: AndroidConfig, settings: AspectJExtension) {
     if (settings.extendClasspath) {
@@ -75,30 +78,17 @@ private fun configureCompiler(project: Project, config: AndroidConfig) {
             .variant(componentIdentity.name)
             .name(taskName)
 
-        val variantType = getVariantSources(variantData).variantType
-
-        val variantTypeClass: Class<*> = variantType::class.java
-        val variantAnalyticsType: Any? = when {
-            variantTypeClass.fields.any { it.name == "mAnalyticsVariantType" } ->
-                variantTypeClass.getField("mAnalyticsVariantType").get(variantType)
-            variantTypeClass.fields.any { it.name == "analyticsVariantType" } ->
-                variantTypeClass.getField("analyticsVariantType").get(variantType)
-            variantTypeClass.enumConstants?.isNotEmpty() == true ->
-                variantTypeClass.enumConstants[5] // .first()?
-                    ?.javaClass
-                    ?.getMethod("getAnalyticsVariantType")
-                    ?.invoke(variantType)
-            else -> null
-        }
-
-        if ((variantAnalyticsType as Enum<*>).name == "UNIT_TEST") {
-            if (config.aspectj().compileTests) {
-                ajc.overwriteJavac(true)
-                    .buildAndAttach(config)
-            }
-        } else {
+//        val variantSources = getVariantSources(variantData)
+//            val componentType = getVariantSources(variantData).componentType
+//
+//        if (componentType.isTestComponent) {
+//            if (config.aspectj().compileTests) {
+//                ajc.overwriteJavac(true)
+//                    .buildAndAttach(config)
+//            }
+//        } else {
             ajc.buildAndAttach(config)
-        }
+//        }
     }
 }
 

@@ -1,8 +1,6 @@
 package com.archinamon.api.transform
 
 import com.android.build.api.transform.*
-import com.android.build.gradle.internal.pipeline.TransformInvocationBuilder
-import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.build.gradle.internal.variant.BaseVariantData
 import com.archinamon.AndroidConfig
 import com.archinamon.api.AspectJWeaver
@@ -13,6 +11,7 @@ import com.archinamon.utils.DependencyFilter.isIncludeFilterMatched
 import com.google.common.collect.Sets
 import org.aspectj.util.FileUtil
 import org.gradle.api.Project
+import org.gradle.api.internal.artifacts.transform.TransformerInvocationFactory
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -67,18 +66,14 @@ internal abstract class AspectJTransform(val project: Project, private val polic
         return Sets.immutableEnumSet(QualifiedContent.DefaultContentType.CLASSES)
     }
 
-    override fun getOutputTypes(): Set<QualifiedContent.ContentType> {
-        return TransformManager.CONTENT_CLASS
-    }
-
     override fun getScopes(): MutableSet<in QualifiedContent.Scope> {
-        return if (modeComplex()) TransformManager.SCOPE_FULL_PROJECT else Sets.immutableEnumSet(
+        return if (modeComplex()) Sets.immutableEnumSet(QualifiedContent.Scope.PROJECT, QualifiedContent.Scope.SUB_PROJECTS, QualifiedContent.Scope.EXTERNAL_LIBRARIES) else Sets.immutableEnumSet(
             QualifiedContent.Scope.PROJECT
         )
     }
 
     override fun getReferencedScopes(): MutableSet<in QualifiedContent.Scope> {
-        return if (modeComplex()) super.getReferencedScopes() else TransformManager.SCOPE_FULL_PROJECT
+        return if (modeComplex()) super.getReferencedScopes() else Sets.immutableEnumSet(QualifiedContent.Scope.PROJECT, QualifiedContent.Scope.SUB_PROJECTS, QualifiedContent.Scope.EXTERNAL_LIBRARIES)
     }
 
     override fun isIncremental(): Boolean {
@@ -93,12 +88,31 @@ internal abstract class AspectJTransform(val project: Project, private val polic
         outputProvider: TransformOutputProvider,
         isIncremental: Boolean
     ) {
-        transform(
-            TransformInvocationBuilder(context)
-                .addInputs(inputs)
-                .addReferencedInputs(referencedInputs)
-                .addOutputProvider(outputProvider)
-                .setIncrementalMode(isIncremental).build()
+        transform(object : TransformInvocation {
+            override fun getContext(): Context {
+                return context
+            }
+
+            override fun getInputs(): MutableCollection<TransformInput> {
+                return ArrayList(inputs)
+            }
+
+            override fun getReferencedInputs(): MutableCollection<TransformInput> {
+                return ArrayList(referencedInputs)
+            }
+
+            override fun getOutputProvider(): TransformOutputProvider {
+                return outputProvider
+            }
+
+            override fun isIncremental(): Boolean {
+                return isIncremental
+            }
+
+            override fun getSecondaryInputs(): MutableCollection<SecondaryInput> {
+                return ArrayList()
+            }
+        }
         )
     }
 

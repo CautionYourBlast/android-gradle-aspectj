@@ -1,5 +1,3 @@
-import com.jfrog.bintray.gradle.BintrayExtension
-import com.jfrog.bintray.gradle.BintrayUploadTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Date
 
@@ -7,10 +5,6 @@ plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
     `maven-publish`
-}
-
-apply {
-    plugin("com.jfrog.bintray")
 }
 
 group = "aspectjPluginGroup"<String>(extra)
@@ -47,14 +41,14 @@ gradlePlugin {
 
 tasks {
     val sourcesJar by creating(Jar::class) {
+        archiveClassifier.set("sources")
         dependsOn(JavaPlugin.CLASSES_TASK_NAME)
-        classifier = "sources"
         from(sourceSets["main"].allSource)
     }
 
     val javadocJar by creating(Jar::class) {
+        archiveClassifier.set("javadoc")
         dependsOn(JavaPlugin.JAVADOC_TASK_NAME)
-        classifier = "javadoc"
         from("$buildDir/docs")
     }
 
@@ -90,29 +84,13 @@ dependencies {
     testImplementation(kotlin("test-junit", kotlinVersion))
 }
 
-if (project.hasProperty("user") && project.hasProperty("apiKey")) {
-    configure<BintrayExtension> {
-        user = "user"<String>(project.properties)
-        key = "apiKey"<String>(project.properties)
-
-        publish = true
-
-        setConfigurations("archives")
-        pkg.apply {
-            repo = "maven"
-            name = "android-gradle-aspectj"
-            vcsUrl = "https://github.com/Archinamon/GradleAspectJ-Android"
-            setLicenses("Apache-2.0")
-            version.apply {
-                name = project.version.toString()
-                released = Date().toString()
-            }
-        }
-    }
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "17"
 }
 
 tasks.withType<Test> {
@@ -123,13 +101,5 @@ tasks.withType<GenerateMavenPom> {
     dependsOn(tasks.withType<Jar>())
 }
 
-tasks.withType<BintrayUploadTask> {
-    dependsOn(tasks.withType<GenerateMavenPom>())
-    dependsOn(tasks.withType<Test>())
-}
-
 inline operator fun <reified T> String.invoke(extra: ExtraPropertiesExtension): T =
-        extra[this] as T
-
-inline operator fun <reified T> String.invoke(properties: Map<String, *>): T =
         extra[this] as T

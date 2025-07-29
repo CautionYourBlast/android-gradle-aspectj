@@ -1,7 +1,6 @@
 package com.archinamon.api.transform
 
 import com.android.build.api.transform.QualifiedContent
-import com.android.build.gradle.internal.pipeline.TransformManager
 import com.google.common.collect.Sets
 import org.gradle.api.Project
 
@@ -12,6 +11,6 @@ internal class LibraryTransformer(project: Project): AspectJTransform(project, B
     }
 
     override fun getReferencedScopes(): MutableSet<in QualifiedContent.Scope> {
-        return TransformManager.SCOPE_FULL_PROJECT
+        return Sets.immutableEnumSet(QualifiedContent.Scope.PROJECT, QualifiedContent.Scope.SUB_PROJECTS, QualifiedContent.Scope.EXTERNAL_LIBRARIES)
     }
 }

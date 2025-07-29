@@ -1,5 +1,7 @@
 package com.archinamon.plugin
 
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.TestedExtension
@@ -13,27 +15,17 @@ import javax.inject.Inject
 
 sealed class AspectJWrapper(private val scope: ConfigScope): Plugin<Project> {
 
-    class DryRun @Inject constructor(): AspectJWrapper(ConfigScope.STANDARD) {
-        override fun getTransformer(project: Project): AspectJTransform = StandardTransformer(project)
-    }
+    class DryRun @Inject constructor(): AspectJWrapper(ConfigScope.STANDARD)
 
-    class Standard @Inject constructor(): AspectJWrapper(ConfigScope.STANDARD) {
-        override fun getTransformer(project: Project): AspectJTransform = StandardTransformer(project)
-    }
+    class Standard @Inject constructor(): AspectJWrapper(ConfigScope.STANDARD)
 
-    class Provides @Inject constructor(): AspectJWrapper(ConfigScope.PROVIDE) {
-        override fun getTransformer(project: Project): AspectJTransform = ProvidesTransformer(project)
-    }
+    class Provides @Inject constructor(): AspectJWrapper(ConfigScope.PROVIDE)
 
-    class Extended @Inject constructor(): AspectJWrapper(ConfigScope.EXTEND) {
-        override fun getTransformer(project: Project): AspectJTransform = ExtendedTransformer(project)
-    }
+    class Extended @Inject constructor(): AspectJWrapper(ConfigScope.EXTEND)
 
-    class Test @Inject constructor(): AspectJWrapper(ConfigScope.JUNIT) {
-        override fun getTransformer(project: Project): AspectJTransform = TestsTransformer(project)
-    }
+    class Test @Inject constructor(): AspectJWrapper(ConfigScope.JUNIT)
 
-    private val noTransformsScopes = arrayOf(
+    private val noWeavingScopes = arrayOf(
             ConfigScope.PROVIDE,
             ConfigScope.JUNIT
     )
@@ -46,27 +38,25 @@ sealed class AspectJWrapper(private val scope: ConfigScope): Plugin<Project> {
 
         configProject(project, config, settings)
 
-        val module: TestedExtension
-        val transformer: AspectJTransform
-        if (config.isLibraryPlugin) {
-            transformer = LibraryTransformer(project)
-            module = project.extensions.getByType(LibraryExtension::class.java)
-        } else {
-            transformer = getTransformer(project)
-            module = project.extensions.getByType(AppExtension::class.java)
-        }
-
         if (this is DryRun) {
             return
         }
 
-        if (scope in noTransformsScopes) {
+        if (scope in noWeavingScopes) {
             return
         }
 
-        transformer.withConfig(config).prepareProject()
-        module.registerTransform(transformer)
+        // Configure weaving using the new AGP 8.x androidComponents API
+        val taskProvider = AspectJTaskProvider(project, config)
+        
+        project.pluginManager.withPlugin("com.android.application") {
+            val androidComponents = project.extensions.getByType(ApplicationAndroidComponentsExtension::class.java)
+            taskProvider.configureForApp(androidComponents)
+        }
+        
+        project.pluginManager.withPlugin("com.android.library") {
+            val androidComponents = project.extensions.getByType(LibraryAndroidComponentsExtension::class.java) 
+            taskProvider.configureForLibrary(androidComponents)
+        }
     }
-
-    internal abstract fun getTransformer(project: Project): AspectJTransform
 }
