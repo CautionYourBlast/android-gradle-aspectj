@@ -16,8 +16,13 @@ import java.io.File
  */
 internal open class AspectJWeavingTask : DefaultTask() {
     
+    @get:Internal
     internal var aspectJWeaver: AspectJWeaver? = null
+    
+    @get:Internal
     internal var androidConfig: AndroidConfig? = null
+    
+    @get:Internal
     internal var variantName: String? = null
     
     @TaskAction
@@ -93,8 +98,18 @@ internal class AspectJTaskProvider(
             val javaCompileTaskName = "compile${variantName.capitalize()}JavaWithJavac"
             val javaCompileTask = project.tasks.findByName(javaCompileTaskName)
             
+            // Also look for KAPT tasks (Hilt annotation processing)
+            val kaptTaskName = "kapt${variantName.capitalize()}Kotlin"
+            val kaptTask = project.tasks.findByName(kaptTaskName)
+            
             if (javaCompileTask != null) {
                 task.dependsOn(javaCompileTask)
+                
+                // Ensure AspectJ runs after KAPT (Hilt code generation)
+                if (kaptTask != null) {
+                    task.dependsOn(kaptTask)
+                    task.mustRunAfter(kaptTask)
+                }
                 
                 // Configure AspectJ weaver with compiled classes
                 task.doFirst {
@@ -102,8 +117,13 @@ internal class AspectJTaskProvider(
                     if (compiledClassesDir?.exists() == true) {
                         task.aspectJWeaver?.inPath?.add(compiledClassesDir)
                         task.aspectJWeaver?.destinationDir = compiledClassesDir.absolutePath
+                        
+                        // Add the full Java compile classpath including AspectJ runtime
+                        val javaTask = javaCompileTask as org.gradle.api.tasks.compile.JavaCompile
+                        task.aspectJWeaver?.classPath?.addAll(javaTask.classpath.files)
                     }
                 }
+                
             }
         }
     }

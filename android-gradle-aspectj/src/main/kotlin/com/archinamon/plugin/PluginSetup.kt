@@ -31,8 +31,11 @@ internal fun configProject(project: Project, config: AndroidConfig, settings: As
     project.whenEvaluated {
         prepareVariant(config)
 
+        // Disable old compiler configuration for AGP 8.x - use new task-based approach instead
+        // This is handled in AspectJWrapper with AndroidComponents API
         if (!settings.dryRun) {
-            configureCompiler(project, config)
+            // Skip old compiler configuration - AGP 8.x uses new task-based approach
+            project.logger.info("Skipping legacy AspectJ compiler configuration for AGP 8.x compatibility")
         }
 
         if (settings.buildTimeLog) {
@@ -113,6 +116,27 @@ private inline fun <reified T> PluginContainer.getPlugin(config: AndroidConfig):
     val plugin: Class<out T> =
         (if (config.isLibraryPlugin) LibraryPlugin::class.java else AppPlugin::class.java) as Class<T>
     return getPlugin(plugin)
+}
+
+private fun getAndroidGradlePluginVersion(): String? {
+    return try {
+        // Try to get AGP version from the plugin
+        val agpPlugin = com.android.build.gradle.AppPlugin::class.java
+        val versionField = agpPlugin.getDeclaredField("ANDROID_GRADLE_PLUGIN_VERSION")
+        versionField.isAccessible = true
+        versionField.get(null) as? String
+    } catch (e: Exception) {
+        try {
+            // Fallback: try to get version from BuildConfig
+            val buildConfig = Class.forName("com.android.build.gradle.internal.ide.ModelBuilder")
+            val versionMethod = buildConfig.getDeclaredMethod("getModelBuilderVersion")
+            versionMethod.isAccessible = true
+            versionMethod.invoke(null) as? String
+        } catch (e2: Exception) {
+            // If we can't determine version, assume AGP 8+ for safety
+            "8.0.0"
+        }
+    }
 }
 
 private inline fun <reified T> Project.whenEvaluated(noinline fn: Project.() -> T) {
