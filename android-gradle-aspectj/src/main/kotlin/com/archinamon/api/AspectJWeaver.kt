@@ -71,43 +71,43 @@ internal class AspectJWeaver(val project: Project) {
         )
 
         if (ajSources.isNotEmpty()) {
-            args + "-sourceroots" + ajSources.joinToString(separator = File.pathSeparator)
+            args.addAll(listOf("-sourceroots", ajSources.joinToString(separator = File.pathSeparator)))
         }
 
         if (inPath.isNotEmpty()) {
-            args + "-inpath" + inPath.joinToString(separator = File.pathSeparator)
+            args.addAll(listOf("-inpath", inPath.joinToString(separator = File.pathSeparator)))
         }
 
         if (aspectPath.isNotEmpty()) {
-            args + "-aspectpath" + aspectPath.joinToString(separator = File.pathSeparator)
+            args.addAll(listOf("-aspectpath", aspectPath.joinToString(separator = File.pathSeparator)))
         }
 
         if (getLogFile().isNotBlank()) {
-            args + "-log" + getLogFile()
+            args.addAll(listOf("-log", getLogFile()))
         }
 
         if (debugInfo) {
-            args + "-g"
+            args.add("-g")
         }
 
         if (weaveInfo) {
-            args + "-showWeaveInfo"
+            args.add("-showWeaveInfo")
         }
 
         if (addSerialVUID) {
-            args + "-XaddSerialVersionUID"
+            args.add("-XaddSerialVersionUID")
         }
 
         if (noInlineAround) {
-            args + "-XnoInline"
+            args.add("-XnoInline")
         }
 
         if (ignoreErrors) {
-            args + "-proceedOnError" + "-noImportError"
+            args.addAll(listOf("-proceedOnError", "-noImportError"))
         }
 
         if (experimental) {
-            args + "-XhasMember" + "-Xjoinpoints:synchronization,arrayconstruction"
+            args.addAll(listOf("-XhasMember", "-Xjoinpoints:synchronization,arrayconstruction"))
         }
 
         if (ajcArgs.isNotEmpty()) {
@@ -116,7 +116,7 @@ internal class AspectJWeaver(val project: Project) {
                     logExtraAjcArgumentAlreadyExists(extra)
                     log.writeText("[warning] Duplicate argument found while composing ajc config! Build may be corrupted.\n\n")
                 }
-                args + extra
+                args.add(extra)
             }
         }
 
@@ -164,7 +164,7 @@ internal class AspectJWeaver(val project: Project) {
     private fun detectErrors() {
         val lf: File  = project.file(getLogFile())
         if (lf.exists()) {
-            lf.readLines().reversed().forEach { line ->
+            lf.readLines().forEach { line ->
                 if (line.contains("[error]") && breakOnError) {
                     throw GradleException ("$line\n${errorReminder.format(getLogFile())}")
                 }

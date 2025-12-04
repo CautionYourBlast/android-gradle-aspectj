@@ -31,11 +31,22 @@ internal fun configProject(project: Project, config: AndroidConfig, settings: As
     project.whenEvaluated {
         prepareVariant(config)
 
-        // Disable old compiler configuration for AGP 8.x - use new task-based approach instead
-        // This is handled in AspectJWrapper with AndroidComponents API
+        // Configure AspectJ compilation (legacy approach disabled for AGP 8.x)
         if (!settings.dryRun) {
-            // Skip old compiler configuration - AGP 8.x uses new task-based approach
-            project.logger.info("Skipping legacy AspectJ compiler configuration for AGP 8.x compatibility")
+            val agpVersion = getAndroidGradlePluginVersion()
+            val isAgp8Plus = agpVersion?.let { 
+                val version = it.split(".")[0].toIntOrNull() ?: 7
+                version >= 8 
+            } ?: true
+            
+            if (isAgp8Plus) {
+                project.logger.info("Skipping legacy AspectJ compiler configuration for AGP 8.x - using new AndroidComponents approach")
+                // New task-based approach is handled in AspectJWrapper with AndroidComponents API
+                // DO NOT call configureCompiler for AGP 8.x
+            } else {
+                project.logger.info("Configuring AspectJ compilation for AGP 7.x compatibility using legacy transform approach")
+                configureCompiler(project, config)
+            }
         }
 
         if (settings.buildTimeLog) {
